@@ -1,0 +1,198 @@
+import java.util.Scanner;
+import java.util.Random;
+
+public class TodoList {
+  public static void main(String[] args) {
+    Scanner scanner = new Scanner(System.in);
+    TodoSys sys = new TodoSys(scanner);
+    Display show = new Display();
+    int choice;
+    boolean run = true;
+    
+    while(run) {
+      show.display();
+      try {
+        choice = scanner.nextInt();
+      }
+      catch(Exception error) {System.out.println("Invalid input"); scanner.nextLine(); continue;}
+      
+      switch(choice) {
+        case 1: {sys.createTask(); break;}
+        case 2: {sys.searchTask(); break;}
+        case 3: {sys.viewTask(); break;}
+        case 4: {sys.deleteTask(); break;}
+        case 5: {
+          System.out.print("Do you want to exit? (Y/N): ");
+          char input;
+          try {
+            input = scanner.next().charAt(0);
+          }
+          catch(Exception error) {System.out.println("nvalid input"); scanner.nextLine(); break;}
+          if(input == 'Y' || input == 'y') {
+            scanner.close();
+            run = false;
+          }
+          else {break;}
+        }
+        default: {break;}
+      }
+    }
+  }
+}
+
+
+class Display {
+  void display() {
+    System.out.print("\n");
+    System.out.println("1. Write a task");
+    System.out.println("2. Search a task");
+    System.out.println("3. View tasks");
+    System.out.println("4. Delete task");
+    System.out.println("5. Exit");
+    System.out.print("\n");
+    System.out.print("Enter: ");
+  }
+}
+
+class Record {
+  private int id;
+  private String task;
+  private boolean status;
+  private Record left;
+  private Record right;
+  
+  public Record (int id, String name, boolean status) {
+    left = null;
+    right = null;
+    this.status = status;
+    this.id = id;
+    this.task = task;
+  }
+  
+  public int getId() {return id;}
+  public String getTask() {return task;}
+  public boolean getStatus() {return status;}
+  public Record getRight() {return right;}
+  public Record getLeft() {return left;}
+  public Record setLeft(Record node) {return left = node;}
+  public Record setRight(Record node) {return right = node;}
+  public void setTask(String task) {this.task = task;}
+  public void setId(int id) {this.id = id;}
+  public void setStatus(boolean status) {this.status = status;}
+}
+
+class TodoSys {
+  private Scanner scanner;
+  private Random random = new Random();
+  private Record tasks;
+  private Record root = null;
+  public TodoSys(Scanner sc) {scanner = sc;}
+  
+  private Record insert(Record node, int id, String task, boolean status) {
+    if(node == null) {return tasks = new Record(id, task, status);}
+    
+    if(id > node.getId()) {node.setRight(insert(node.getRight(), id, task, status));}
+    else {node.setLeft(insert(node.getLeft(), id, task, status));}
+    return node;
+  }
+  
+  private void traversal(Record node) {
+    if(node == null) {return;}
+    
+    traversal(node.getLeft());
+    System.out.print("\n");
+    System.out.println("Task: " + node.getTask());
+    System.out.println("Task status: " + (node.getStatus() ? "Completed":"Incomplete"));
+    System.out.print("\n");
+    traversal(node.getRight());
+  }
+  
+  private Record findMin(Record node) {
+    if(node == null) {return null;}
+    
+    if(node.getLeft() != null) {
+      return findMin(node.getLeft());
+    }
+    else {return node;}
+  }
+  
+  private void searchNode(Record node, int id) {
+    if(node == null) {System.out.println("There are no tasks"); return;}
+    
+    if(id > node.getId()) {searchNode(node.getRight(), id); return;}
+    else if(id < node.getId()) {searchNode(node.getLeft(), id); return;}
+    else {
+      System.out.println("Task: " + node.getTask());
+      System.out.println("Status: " + (node.getStatus() ? "Complete" : "Incomplete"));
+      System.out.print("\n");
+    }
+  }
+  
+  private boolean checkNode(Record node) {return node != null && node.getLeft() != null && node.getRight() != null;}
+  
+  private Record deleteNode(Record node, int id) {
+    if(node == null) {return null;}
+    
+    if(id > node.getId()) {return deleteNode(node.getRight(), id);}
+    else if(id < node.getId()) {return deleteNode(node.getRight(), id);}
+    else {
+      if(node.getLeft() != null) {return node.getRight();}
+      else if(node.getRight() != null) {return node.getLeft();}
+      else {
+        if(checkNode(node)) {
+          Record min = findMin(node.getRight());
+          node.setTask(min.getTask());
+          node.setStatus(min.getStatus());
+          node.setId(min.getId());
+          node.setRight(deleteNode(node.getRight(), min.getId()));
+        }
+      }
+    }
+    return node;
+  }
+  
+  public void createTask() {
+    int idGenerator = random.nextInt(90000) + 10000;
+    boolean status = false;
+    String task;
+    
+    scanner.nextLine();
+    System.out.print("Write a task: ");
+    task = scanner.nextLine();
+    
+    root = insert(root, idGenerator, task, status);
+    System.out.println("Task successfully created");
+  }
+  
+  public void viewTask() {
+    if(root == null) {System.out.println("There are no tasks"); return;}
+    
+    System.out.println("---TASKS---");
+    traversal(root);
+  }
+  
+  public void deleteTask() {
+    if(root == null) {System.out.println("There are no tasks"); return;}
+    
+    viewTask();
+    System.out.println();
+    
+    scanner.nextLine();
+    System.out.print("Enter task id: ");
+    int id = scanner.nextInt();
+    
+    root = deleteNode(root, id);
+  }
+  
+  public void searchTask() {
+    if(root == null) {System.out.println("There are no tasks"); return;}
+    
+    viewTask();
+    
+    scanner.nextLine();
+    System.out.print("Enter task id: ");
+    int id = scanner.nextInt();
+    
+    searchNode(root, id);
+  }
+}
