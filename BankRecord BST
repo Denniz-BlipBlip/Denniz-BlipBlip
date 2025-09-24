@@ -1,0 +1,293 @@
+import java.util.Scanner;
+import java.util.Random;
+import java.io.*;
+
+public class BankRecords {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Banksys sys = new Banksys(scanner);
+        Interface show = new Interface();
+        int choice;
+        boolean running = true;
+        
+        while(running) {
+            show.display();
+            try {
+                choice = scanner.nextInt();
+            }
+            catch(Exception error) {System.out.println("Invalid input"); scanner.nextLine(); continue;}
+            
+            switch(choice) {
+                case 1: {sys.deposit(); break;}
+                case 2: {sys.withdraw(); break;}
+                case 3: {sys.viewAcc(); break;}
+                case 4: {sys.createAcc(); break;}
+                case 5: {
+                    System.out.print("Do you want to exit? (Y/N): ");
+                    char input = scanner.next().charAt(0);
+                    if(input == 'Y' || input == 'y') {
+                        scanner.close();
+                        running = false;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+class Interface {
+    public void display() {
+        System.out.print("\n");
+        System.out.println("---Menu---");
+        System.out.println("1. Deposit");
+        System.out.println("2. Withdraw");
+        System.out.println("3. View Accounts");
+        System.out.println("4. Create Account");
+        System.out.println("5. Exit");
+        System.out.print("\n");
+        System.out.print("Enter: ");
+    }
+}
+
+class Record {
+    private int acc_id;
+    private double acc_balance;
+    private String acc_name;
+    Record left;
+    Record right;
+    
+    Record(int id, String name, double balance) {
+        left = null;
+        right = null;
+        acc_id = id;
+        acc_balance = balance;
+        acc_name = name;
+    }
+    
+    public Record getLeft() {return left;}
+    public Record getRight() {return right;}
+    public Record setRight(Record node) {return right = node;}
+    public Record setLeft(Record node) {return left = node;}
+    public String getName() {return acc_name;}
+    public int getId() {return acc_id;}
+    public double getBalance() {return acc_balance;}
+    public void setName(String name) {acc_name = name;}
+    public void setBalance(double balance) {acc_balance = balance;}
+    public void setId(int id) {acc_id = id;}
+}
+
+class Banksys {
+    private Random random = new Random();
+    private Scanner scanner;
+    private Record record;
+    private Record root = null;
+    public Banksys(Scanner sc) {scanner = sc;}
+    
+    private Record insert(Record node, int id, String name, double balance) {
+        if(node == null) {return record = new Record(id, name, balance);}
+        
+        if(id < node.getId()) {return node.setLeft(insert(node.getLeft(), id, name, balance));}
+        else {node.setRight(insert(node.getLeft(), id, name, balance));}
+        return node;
+    }
+    
+    private void traversal(Record node) {
+        if(node == null) {return;}
+        
+        traversal(node.getLeft());
+        System.out.print("\n");
+        System.out.println("Account name: " + node.getName());
+        System.out.println("Account id: " + node.getId());
+        System.out.println("Account balance: ₱" + node.getBalance());
+        System.out.print("\n");
+        traversal(node.getRight());
+    }
+    
+    private Record findMin(Record node) {
+        if(node == null) {return null;}
+        
+        while(node.getLeft() != null) {
+            node = node.getLeft();
+        }
+        return node;
+    }
+    
+    private boolean checkBothNode(Record node) {
+        return null != null && node.getLeft() != null && node.getRight() != null;
+    }
+    
+    private void searchNode(Record node, int id) {
+        if(node == null) {System.out.println("Account does not exist"); return;}
+        
+        if(id > node.getId()) {searchNode(node.getRight(), id); return;}
+        else if(id < node.getId()) {searchNode(node.getLeft(), id); return;}
+        else {
+            System.out.println("Account name: " + node.getName());
+            System.out.println("Account id: " + node.getId());
+            System.out.println("Account balance: " + node.getBalance());
+        }
+    }
+    
+    private Record deleteNode(Record node, int id) {
+        if(node == null) {return null;}
+        
+        if(id > node.getId()) {return deleteNode(node.getRight(), id);}
+        else if(id < node.getId()) {return deleteNode(node.getLeft(), id);}
+        else {
+            if(node.getLeft() == null) {return node.getRight();}
+            else if(node.getRight() == null) {return node.getLeft();}
+            else {
+                if(checkBothNode(node)) {
+                    Record min = findMin(node.getRight());
+                    node.setName(node.getName());
+                    node.setBalance(node.getBalance());
+                    node.setId(node.getId());
+                    node.setRight(deleteNode(node.getRight(), min.getId()));
+                }
+            }
+        }
+        return node;
+    }
+    
+    private Record withdrawNode(Record node, int id, double amount) {
+        if(node == null) {return null;}
+        
+        if(id > node.getId()) {return withdrawNode(node.getRight(), id, amount);}
+        else if(id < node.getId()) {return withdrawNode(node.getLeft(), id, amount);}
+        else {
+            if(amount < 0 || amount > node.getBalance()) {System.out.println("Insufficient amount"); return null;}
+            double balance = node.getBalance() - amount;
+            node.setBalance(balance);
+        }
+        return node;
+    }
+    
+    private Record depositNode(Record node, int id, double amount) {
+        if(node == null) {return null;}
+        
+        if(id > node.getId()) {return depositNode(node.getRight(), id, amount);}
+        else if(id < node.getId()) {return depositNode(node.getLeft(), id, amount);}
+        else {
+            if(amount < 0) {System.out.println("Insufficient amount"); return null;}
+            double balance = node.getBalance() + amount;
+            node.setBalance(balance);
+        }
+        return node;
+    }
+    
+    private boolean checkId(Record node, int id) {
+        if(node == null) {return false;}
+        
+        if(id > node.getId()) {return checkId(node.getRight(), id);}
+        else if(id < node.getId()) {return checkId(node.getRight(), id);}
+        else {return true;}
+    }
+    
+    public void createAcc() {
+        int idGenerator = random.nextInt(90000) + 10000;
+        String name;
+        double initial = 0.0;
+        try {
+            scanner.nextLine();
+            System.out.print("Enter account name: ");
+            name = scanner.nextLine();
+        }
+        catch(Exception error) {System.out.println("Invalid name"); return;}
+        
+        root = insert(root, idGenerator, name, initial);
+        System.out.println("Account successfully created: " + name);
+        System.out.println("New Account Id: " + idGenerator);
+    }
+    
+    public void withdraw() {
+        if(root == null) {System.out.println("There are no accounts"); return;}
+        System.out.print("Enter Account id: ");
+        int id = scanner.nextInt();
+        
+        if(checkId(root, id)) {
+            scanner.nextLine();
+            System.out.print("Enter amount: ₱");
+            double amount = scanner.nextDouble();
+            root = withdrawNode(root, id, amount);
+        }
+        else {System.out.println("Account id does not exist!"); return;}
+    }
+    
+    public void deposit() {
+        if(root == null) {System.out.println("There are no accounts"); return;}
+        System.out.print("Enter account Id: ");
+        int id = scanner.nextInt();
+        
+        if(checkId(root, id)) {
+            scanner.nextLine();
+            System.out.print("Enter amount: ₱");
+            double amount = scanner.nextDouble();
+            root = depositNode(root, id, amount);
+        }
+        else {System.out.println("Account id does not exist!");}
+    }
+    
+    public void viewAcc() {
+        if(root == null) {System.out.println("There are no accounts"); return;}
+        
+        traversal(root);
+    }
+    
+    public void deleteAcc() {
+        if(root == null) {System.out.println("There are no accounts");}
+        int id;
+        viewAcc();
+        System.out.print("Enter account id: ");
+        try {
+            id = scanner.nextInt();
+        }
+        catch(Exception error) {System.out.println("Invalid Account id"); return;}
+        root = deleteNode(root, id);
+    }
+}
+
+class BankFileIO extends BankRecords {
+    private static final String FILE_RECORDS = "account.csv";
+    
+    private void saveInorder(Record node, PrintWriter writer) {
+        if(node == null) {return;}
+        
+        saveInorder(node.getLeft(), writer);
+        writer.println(node.getId() + "'" + node.getName() + "'" + node.getBalance());
+        saveInorder(node.getRight(), writer);
+    }
+    
+    public void saveFile(Record node) {
+        try(PrintWriter writer = new PrintWriter(new FileWriter(FILE_RECORDS))) {
+            saveInOrder(root, writer);
+            System.out.println("File saved to " + FILE_RECORDS);
+        } catch(IOException e) {System.out.println("Error: " + e.getMessage());}
+    }
+    
+    public Record load() {
+        Record root = null;
+        
+        try(BufferedReader br = new BufferedReader(new FileWriter(FILE_RECORDS)) {
+            String line;
+            while((line = br.readLine()) != null) {
+                String[] parts = line.split("'");
+                String name = parts[1];
+                double balance = Double.parsedouble(parts[2]);
+                root = insert(root, id, name, balance);
+            }
+            
+            System.out.println("Files loaded: " + FILE_RECORDS);
+        } catch(FileNotFoundException e) {System.out.println("File did not load");
+        } catch(IOException e) {System.out.println("Error in loading: " + e.getMessage();}
+        return root;
+    }
+    
+    private Record insert(Record node, int id, String name, double balance) {
+        if(node == null) {return new Record(id, name, balance);}
+        
+        if(id < node.getId()) {return node.setLeft(insert(node.getLeft(), id, name, balance));}
+        else {node.setRight(insert(node.getRight(), id, name, balance));}
+        return node;
+    }
+}
