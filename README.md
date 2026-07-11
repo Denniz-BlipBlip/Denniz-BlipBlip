@@ -1,4 +1,4 @@
-## Hi! I'm Gentian<br/>
+## Hi! I'm Denniz<br/>
 
 Information Technology student at Aklan State University,<br/>
 majoring in Service Management Business Process Outsourcing.
